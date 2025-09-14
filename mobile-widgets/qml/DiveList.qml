@@ -296,6 +296,15 @@ Kirigami.ScrollablePage {
 		}
 	}
 
+	property QtObject exportDiveAsCsv: Kirigami.Action {
+		text: visible ? qsTr("Export dive as CSV") : ""
+		icon { name: ":/icons/ic_cloud_upload.svg" }
+		visible: currentItem && currentItem.modelData && !currentItem.modelData.isTrip && currentItem.modelData.diveInTrip === false
+		onTriggered: {
+			manager.exportDiveAsCsv(currentItem.modelData.id)
+		}
+	}
+
 	property QtObject toggleInvalidAction: Kirigami.Action {
 		text: currentItem && currentItem.modelData && currentItem.modelData.isInvalid ? qsTr("Mark dive as valid") : qsTr("Mark dive as invalid")
 		// icon: { name: "TBD" }
@@ -341,7 +350,7 @@ Kirigami.ScrollablePage {
 		enabled: manager.redoText !== ""
 		onTriggered: manager.redo()
 	}
-	property var contextactions: [ removeDiveFromTripAction, createTripForDiveAction, addDiveToTripAboveAction, addDiveToTripBelowAction, mergeWithDiveAboveAction, mergeWithDiveBelowAction, toggleInvalidAction, deleteAction, mapAction, tripDetailsEdit, undoAction, redoAction ]
+	property variant contextactions: [ removeDiveFromTripAction, createTripForDiveAction, addDiveToTripAboveAction, addDiveToTripBelowAction, mergeWithDiveAboveAction, mergeWithDiveBelowAction, exportDiveAsCsv, toggleInvalidAction, deleteAction, mapAction, tripDetailsEdit, undoAction, redoAction ]
 	property var contextualActions: (Backend.cloud_verification_status === Enums.CS_VERIFIED ||
 	                                  Backend.cloud_verification_status === Enums.CS_NOCLOUD)
 	                                 ? contextactions : []
