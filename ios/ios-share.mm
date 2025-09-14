@@ -19,6 +19,8 @@
 }
 - (void)shareViaEmail:(const QString &) subject :(const QString &) recipient :(const QString &) body :(const QString &) firstPath :(const QString &) secondPath;
 - (void)mailComposeController:(MFMailComposeViewController *)controller didFinishWithResult:(MFMailComposeResult)result error:(nullable NSError *)error;
+- (void)shareViaSharesheet:(const QString &) filePath;
+- (UIViewController *)topMostViewController;
 @end
 
 @implementation IosShareObject
@@ -50,6 +52,10 @@ void IosShare::shareViaEmail(const QString &subject, const QString &recipient, c
 	[(id)self shareViaEmail:subject:recipient:body:firstPath:secondPath];
 }
 
+void IosShare::shareWithSharesheet(const QString &filePath)
+{
+	[(id)self shareViaSharesheet:filePath];
+}
 // the rest is the ObjC++ implementation
 - (instancetype)init {
 	// this is just boiler plate that I really don't understand
@@ -91,6 +97,57 @@ void IosShare::shareViaEmail(const QString &subject, const QString &recipient, c
 	}
 	// finally, show the controller - the code returns right away, which is why we need the 'didFinishWithResult' method below
 	[topController presentViewController:mc animated:YES completion:NULL];
+}
+
+- (void)shareViaSharesheet:(const QString &)filePathQS {
+	NSString *path = [[NSString alloc] initWithUTF8String:(filePathQS.toUtf8().data())];
+
+	if (path.length == 0) return;
+	if (![[NSFileManager defaultManager] fileExistsAtPath:path]) return;
+
+	void (^present)(void) = ^{
+	  UIViewController *vc = [self topMostViewController];
+	  if (!vc) return;
+
+	  NSURL *fileURL = [NSURL fileURLWithPath:path isDirectory:NO];
+	  UIActivityViewController *avc =
+		  [[UIActivityViewController alloc] initWithActivityItems:@[fileURL]
+						    applicationActivities:nil];
+
+	  UIPopoverPresentationController *pop = avc.popoverPresentationController;
+	  if (pop) {
+		  pop.sourceView = vc.view;
+		  CGRect b = vc.view.bounds;
+		  pop.sourceRect = CGRectMake(CGRectGetMidX(b), CGRectGetMidY(b), 1, 1);
+		  pop.permittedArrowDirections = 0;
+	  }
+
+	  [vc presentViewController:avc animated:YES completion:nil];
+	};
+
+	if ([NSThread isMainThread]) { present(); }
+	else { dispatch_async(dispatch_get_main_queue(), present); }
+}
+
+- (UIViewController *)topMostViewController {
+	UIWindow *key = nil;
+	if (@available(iOS 13.0, *)) {
+		for (UIScene *s in UIApplication.sharedApplication.connectedScenes) {
+			if (s.activationState != UISceneActivationStateForegroundActive) continue;
+			if (![s isKindOfClass:UIWindowScene.class]) continue;
+			for (UIWindow *w in ((UIWindowScene *)s).windows) if (w.isKeyWindow) { key = w; break; }
+			if (key) break;
+		}
+	}
+	if (!key) key = UIApplication.sharedApplication.keyWindow;
+	UIViewController *vc = key.rootViewController;
+	while (YES) {
+		if ([vc isKindOfClass:UINavigationController.class]) vc = ((UINavigationController *)vc).visibleViewController ?: vc;
+		else if ([vc isKindOfClass:UITabBarController.class]) vc = ((UITabBarController *)vc).selectedViewController ?: vc;
+		else if (vc.presentedViewController) vc = vc.presentedViewController;
+		else break;
+	}
+	return vc;
 }
 
 // I would have kinda liked to inform the caller that sending mail failed, but I can't figure

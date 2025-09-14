@@ -1649,6 +1649,22 @@ void QMLManager::selectDive(int id)
 		report_error("QManager::selectDive() called with unknown id %d",id);
 }
 
+void QMLManager::exportDiveAsCsv(int id)
+{
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
+	QString fileName = appLogFileName;
+#else
+	QString fileName = QString::fromStdString(system_default_directory());
+#endif
+
+	fileName.replace("subsurface.log", QString("subsurface_%1.csv").arg(id));
+	save_profiledata(fileName.toStdString().c_str(), true);
+
+#if defined(Q_OS_IOS)
+	iosshare.shareWithSharesheet(fileName);
+#endif
+}
+
 void QMLManager::deleteDive(int id)
 {
 	struct dive *d = divelog.dives.get_by_uniq_id(id);

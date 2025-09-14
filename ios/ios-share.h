@@ -11,6 +11,7 @@ public:
 	~IosShare();
 	void supportEmail(const QString &firstPath, const QString &secondPath);
 	void shareViaEmail(const QString &subject, const QString &recipient, const QString &body, const QString &firstPath, const QString &secondPath);
+	void shareWithSharesheet(const QString &filePath);
 private:
 	void *self;
 };

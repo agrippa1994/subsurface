@@ -205,6 +205,7 @@ public slots:
 	void selectDive(int id);
 	void deleteDive(int id);
 	void deleteAccount();
+	void exportDiveAsCsv(int id);
 	void toggleDiveInvalid(int id);
 	void copyDiveData(int id);
 	void pasteDiveData(int id);
