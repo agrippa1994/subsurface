@@ -207,6 +207,11 @@ if [ "$QUICK" != "1" ] ; then
 	if [ ! -e "$PKG_CONFIG_LIBDIR"/libxslt.pc ] ; then
 		mkdir -p "${PARENT_DIR}/libxslt-build-${ARCH}"
 		pushd "${PARENT_DIR}/libxslt-build-${ARCH}"
+
+		sed -i '' '25i\
+	CFLAGS="-Wno-error=incompatible-function-pointer-types ${CFLAGS}"
+	' "${PARENT_DIR}"/libxslt/configure.ac
+
 		"$PARENT_DIR"/libxslt/configure --host=$BUILDCHAIN --prefix="$PREFIX" --with-libxml-include-prefix="$INSTALL_ROOT"/include/libxml2 --without-python --without-crypto --enable-static --disable-shared
 		make
 		make install
@@ -239,6 +244,18 @@ if [ "$QUICK" != "1" ] ; then
 	pushd "$PARENT_DIR"/libgit2
 	# libgit2 with -Wall on iOS creates megabytes of warnings...
 	sed -i.bak 's/ADD_C_FLAG_IF_SUPPORTED(-W/# ADD_C_FLAG_IF_SUPPORTED(-W/' CMakeLists.txt
+	sed -i.bak '12a \
+add_compile_options(-std=c11)\
+add_compile_options(-Wno-error=nullability-completeness)\
+add_compile_options(\
+	-Wno-nullability-completeness\
+	-Wno-nullability-extension\
+	-Wno-nullability-inferred-on-nested-type\
+	-Wno-error=nullability-completeness\
+	-Wno-error=nullability-extension\
+	-Wno-error=nullability-inferred-on-nested-type\
+)' CMakeLists.txt
+
 	popd
 
 	if [ ! -e "${PKG_CONFIG_LIBDIR}/libgit2.pc" ] ; then
@@ -254,8 +271,9 @@ if [ "$QUICK" != "1" ] ; then
 			-DCMAKE_PREFIX_PATH="$PREFIX" \
 			-DCURL=OFF \
 			-DUSE_SSH=OFF \
+			-DBUILD_TESTS=OFF \
+			-DBUILD_CLI=OFF \
 			"${PARENT_DIR}/libgit2/"
-		sed -i.bak 's/C_FLAGS = /C_FLAGS = -Wno-nullability-completeness -Wno-expansion-to-defined /' src/CMakeFiles/git2.dir/flags.make
 		make
 		make install
 		# Patch away pkg-config dependency to zlib, its there, i promise
