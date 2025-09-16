@@ -2277,7 +2277,7 @@ void QMLManager::shareViaEmail(export_types type, bool anonymize)
 	QString body;
 	switch (type) {
 	case EX_DIVES_XML:
-		fileName.replace("subsurface.log", "subsurface.ssrf");
+		fileName.replace("subsurface.log", "subsurface.xml");
 		if (save_dives_logic(qPrintable(fileName), false, anonymize) == 0) {
 			// ok, we have a file, let's send it
 			body = "Subsurface dive log data";
@@ -2319,7 +2319,7 @@ void QMLManager::shareViaEmail(export_types type, bool anonymize)
 	// call into objC++ code to share on iOS
 	QString subject("Subsurface export");
 	QString emptyString;
-	iosshare.shareViaEmail(subject, emptyString, body, fileName, emptyString);
+	iosshare.shareWithSharesheet(fileName);
 #else
 	appendTextToLog("on a mobile platform this would send" + fileName + "via email with body" + body);
 #endif
