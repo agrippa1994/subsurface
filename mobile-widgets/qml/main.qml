@@ -397,6 +397,18 @@ if you have network connectivity and want to sync your data to cloud storage."),
 						detailsWindow.endEditMode()
 					}
 				}
+				Kirigami.Action {
+					icon {
+						name: ":/icons/ic_cloud_upload.svg"
+					}
+					text: qsTr("Import")
+					visible: Qt.platform.os == "ios"
+					onTriggered: {
+						globalDrawer.close()
+						detailsWindow.endEditMode()
+						manager.importFromLocal();
+					}
+				}
 			},
 			Kirigami.Action {
 				icon {

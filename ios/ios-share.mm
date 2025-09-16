@@ -11,15 +11,20 @@
 #import <Foundation/NSString.h>
 #import <UIKit/UIKit.h>
 #import <MessageUI/MessageUI.h>
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 // declare an ObjC++ class that will interact with the mail controller
 // that second member that is called when the mail app is finished is critical for this to work
-@interface IosShareObject : UIViewController  <MFMailComposeViewControllerDelegate>
+@interface IosShareObject : UIViewController  <MFMailComposeViewControllerDelegate, UIDocumentPickerDelegate>
 {
 }
+
+@property(nonatomic, assign) IosShare *share;
+
 - (void)shareViaEmail:(const QString &) subject :(const QString &) recipient :(const QString &) body :(const QString &) firstPath :(const QString &) secondPath;
 - (void)mailComposeController:(MFMailComposeViewController *)controller didFinishWithResult:(MFMailComposeResult)result error:(nullable NSError *)error;
 - (void)shareViaSharesheet:(const QString &) filePath;
+- (void)showFilePicker;
 - (UIViewController *)topMostViewController;
 @end
 
@@ -29,6 +34,7 @@ IosShare::IosShare() : self(NULL) {
 	// call init to ensure that the ObjC++ object is instantiated, which in return
 	// apparently sets up the Controller
 	self = [ [IosShareObject alloc] init];
+	((IosShareObject *)self).share = this;
 }
 
 IosShare::~IosShare() {
@@ -56,6 +62,12 @@ void IosShare::shareWithSharesheet(const QString &filePath)
 {
 	[(id)self shareViaSharesheet:filePath];
 }
+
+void IosShare::showFilePicker()
+{
+	[(id)self showFilePicker];
+}
+
 // the rest is the ObjC++ implementation
 - (instancetype)init {
 	// this is just boiler plate that I really don't understand
@@ -127,6 +139,79 @@ void IosShare::shareWithSharesheet(const QString &filePath)
 
 	if ([NSThread isMainThread]) { present(); }
 	else { dispatch_async(dispatch_get_main_queue(), present); }
+}
+
+- (void)showFilePicker {
+
+	UIViewController *top = [self topMostViewController];
+	if (!top) {
+		return;
+	};
+
+	UIDocumentPickerViewController *picker;
+
+	picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[[UTType typeWithIdentifier: @"public.xml"]]];
+	picker.allowsMultipleSelection = false;
+	picker.delegate = self;
+	picker.modalPresentationStyle = UIModalPresentationFormSheet;
+	[top presentViewController:picker animated:YES completion:nil];
+}
+
+- (void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls
+{
+	if (urls.count != 1) return;
+	NSURL *url = urls.firstObject;
+
+	if (![url startAccessingSecurityScopedResource]) return;
+
+	NSError *outerError = nil;
+	NSFileCoordinator *coord = [[NSFileCoordinator alloc] init];
+
+	__block NSURL *localURL = nil;
+	__block NSError *copyError = nil;
+
+	[coord coordinateReadingItemAtURL:url options:0 error:&outerError byAccessor:^(NSURL *newURL) {
+		NSNumber *isUbiquitous = nil;
+		[newURL getResourceValue:&isUbiquitous forKey:NSURLIsUbiquitousItemKey error:nil];
+		if (isUbiquitous.boolValue) {
+			NSNumber *isDownloaded = nil;
+			[newURL getResourceValue:&isDownloaded forKey:NSURLUbiquitousItemIsDownloadedKey error:nil];
+			if (!isDownloaded.boolValue) {
+				[[NSFileManager defaultManager] startDownloadingUbiquitousItemAtURL:newURL error:nil];
+				for (int i = 0; i < 100 && !isDownloaded.boolValue; i++) {
+					[NSThread sleepForTimeInterval:0.05];
+					[newURL getResourceValue:&isDownloaded forKey:NSURLUbiquitousItemIsDownloadedKey error:nil];
+				}
+			}
+		}
+
+		NSString *destinationName = newURL.lastPathComponent ?: @"picked";
+		NSURL *destinationUrl = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:destinationName]];
+		NSFileManager *fileManager = NSFileManager.defaultManager;
+		[fileManager removeItemAtURL:destinationUrl error:nil];
+		if (![fileManager copyItemAtURL:newURL toURL:destinationUrl error:&copyError]) {
+			return;
+		}
+
+		localURL = destinationUrl;
+	}];
+
+	[url stopAccessingSecurityScopedResource];
+
+	if (outerError) {
+		NSLog(@"Coordinator err: %@", outerError);
+		return;
+	}
+	if (copyError) {
+		NSLog(@"Copy error: %@", copyError);
+		return;
+	}
+	if (!localURL) {
+		NSLog(@"No local URL");
+		return;
+	}
+
+	emit self.share->fileSelected(QString(localURL.absoluteString.UTF8String));
 }
 
 - (UIViewController *)topMostViewController {

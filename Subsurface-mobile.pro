@@ -420,7 +420,7 @@ ios {
 		-liconv \
 		-lxml2
 
-	LIBS += -framework MessageUI
+        LIBS += -framework MessageUI -framework UniformTypeIdentifiers
 
 	INCLUDEPATH += $${ARCH_PATH}/include/ \
 		$${ARCH_PATH}/include/libexstl \
