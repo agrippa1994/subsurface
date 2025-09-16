@@ -1,6 +1,6 @@
 TEMPLATE = app
 
-QT += qml quick quickcontrols2 widgets positioning concurrent svg bluetooth 
+QT += qml quick quickcontrols2 widgets positioning concurrent svg bluetooth
 
 DEFINES += SUBSURFACE_MOBILE BT_SUPPORT BLE_SUPPORT MAP_SUPPORT
 
@@ -393,7 +393,7 @@ android {
 }
 
 ios {
-	SOURCES += core/ios.cpp
+        SOURCES += core/ios.cpp
 	RESOURCES += packaging/ios/translations.qrc
 	QMAKE_IOS_DEPLOYMENT_TARGET = 12.0
 	QMAKE_TARGET_BUNDLE_PREFIX = org.subsurface-divelog
@@ -409,7 +409,7 @@ ios {
 	Q_ENABLE_BITCODE.name = ENABLE_BITCODE
 	Q_ENABLE_BITCODE.value = NO
 	QMAKE_MAC_XCODE_SETTINGS += Q_ENABLE_BITCODE
-	ARCH_PATH = ../install-root/ios/$${ARCH}
+	ARCH_PATH = ../install-root/ios/arm64
 
 	LIBS += $${ARCH_PATH}/lib/libdivecomputer.a \
 		$${ARCH_PATH}/lib/libgit2.a \
