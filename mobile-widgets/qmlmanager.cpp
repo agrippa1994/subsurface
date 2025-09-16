@@ -1701,6 +1701,27 @@ void QMLManager::exportDiveAsCsv(int id)
 #endif
 }
 
+void QMLManager::importFromLocal()
+{
+#if defined(Q_OS_IOS)
+	QObject::connect(&iosshare, &IosShare::fileSelected, this, [this](const QString &filePath) {
+		// remove file:// prefix
+		const QString path = filePath.right(filePath.size() - 7) ;
+		appendTextToLog("Opening logbook at " + path);
+		struct divelog log;
+
+		appendTextToLog(QString("importing %1").arg(path));
+		parse_file(qPrintable(path), &log);
+
+		divelog.clear();
+		divelog.add_imported_dives(log, import_flags::merge_all_trips);
+		changesNeedSaving();
+	});
+	iosshare.showFilePicker();
+
+#endif
+}
+
 void QMLManager::deleteDive(int id)
 {
 	struct dive *d = divelog.dives.get_by_uniq_id(id);
