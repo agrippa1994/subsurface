@@ -316,8 +316,19 @@ int parse_file(const char *filename, struct divelog *log)
 		return report_error(translate("gettextFromC", "Empty file '%s'"), filename);
 	}
 
+  fmt = strrchr(filename, '.');
+
+	/* FIT (Garmin et al.) file format */
+	if (fmt && (!strcasecmp(fmt + 1, "FIT")))
+		return fit_file_import(mem, log);
+
+		/* Suunto JSON device log (from Suunto app export) */
+	if (fmt && (!strcasecmp(fmt + 1, "json")))
+		if (suunto_json_import(mem, log) > 0)
+			return 0;
+
 #if !defined(SUBSURFACE_MOBILE)
-	fmt = strrchr(filename, '.');
+
 	if (fmt && (!strcasecmp(fmt + 1, "DB") || !strcasecmp(fmt + 1, "BAK") || !strcasecmp(fmt + 1, "SQL"))) {
 		if (!try_to_open_db(filename, mem, log))
 			return 0;
@@ -343,9 +354,6 @@ int parse_file(const char *filename, struct divelog *log)
 	if (fmt && (!strcasecmp(fmt + 1, "DIVE")))
 		return ostctools_import(mem, log);
 
-	/* FIT (Garmin et al.) file format */
-	if (fmt && (!strcasecmp(fmt + 1, "FIT")))
-		return fit_file_import(mem, log);
 
 	/* Scubapro Logtrak files */
 	if (fmt && (!strcasecmp(fmt+1, "script"))) {

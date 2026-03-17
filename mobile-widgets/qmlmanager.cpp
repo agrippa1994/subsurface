@@ -1713,8 +1713,11 @@ void QMLManager::importFromLocal()
 		appendTextToLog(QString("importing %1").arg(path));
 		parse_file(qPrintable(path), &log);
 
-		divelog.clear();
-		divelog.add_imported_dives(log, import_flags::merge_all_trips);
+    if (path.endsWith((".xml"))) {
+      divelog.clear();
+    }
+    
+    divelog.add_imported_dives(log, import_flags::merge_all_trips);
 		changesNeedSaving();
 	});
 	iosshare.showFilePicker();

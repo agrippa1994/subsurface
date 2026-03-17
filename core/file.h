@@ -4,11 +4,11 @@
 
 #include "filterpreset.h"
 
-#include <sys/stat.h>
-#include <stdio.h>
-#include <vector>
-#include <utility>
 #include <memory>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <utility>
+#include <vector>
 
 // MSVC doesn't define mode_t
 #ifdef _MSC_VER
@@ -39,13 +39,14 @@ extern int _wclosedir(_WDIR *dir);
 struct divelog;
 struct zip;
 
+extern int fit_file_import(const std::string &buffer, struct divelog *log);
+extern int suunto_json_import(const std::string &buffer, struct divelog *log);
+
 #if !defined(SUBSURFACE_MOBILE)
 extern int ostctools_import(std::string &buffer, struct divelog *log);
 extern int divesoft_import(const std::string &buffer, struct divelog *log);
 extern int logtrak_import(const std::string &mem, struct divelog *log);
 extern int scubapro_asd_import(const std::string &mem, struct divelog *log);
-extern int fit_file_import(const std::string &buffer, struct divelog *log);
-extern int suunto_json_import(const std::string &buffer, struct divelog *log);
 
 extern int try_to_open_cochran(const char *filename, std::string &mem, struct divelog *log);
 extern int try_to_open_liquivision(const char *filename, std::string &mem, struct divelog *log);

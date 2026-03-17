@@ -150,7 +150,7 @@ void IosShare::showFilePicker()
 
 	UIDocumentPickerViewController *picker;
 
-	picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[[UTType typeWithIdentifier: @"public.xml"]]];
+	picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[[UTType typeWithIdentifier: @"public.xml"], UTTypeData]];
 	picker.allowsMultipleSelection = false;
 	picker.delegate = self;
 	picker.modalPresentationStyle = UIModalPresentationFormSheet;
