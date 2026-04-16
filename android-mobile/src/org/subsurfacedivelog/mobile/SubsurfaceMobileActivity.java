@@ -20,6 +20,11 @@ import android.hardware.usb.UsbManager;
 import android.util.Log;
 import java.io.File;
 import android.net.Uri;
+import android.content.ContentResolver;
+import android.database.Cursor;
+import android.provider.OpenableColumns;
+import java.io.InputStream;
+import java.io.FileOutputStream;
 import androidx.core.content.FileProvider;
 import androidx.core.app.ShareCompat;
 import android.content.pm.PackageManager;
@@ -98,6 +103,8 @@ public class SubsurfaceMobileActivity extends QtActivity
 	private static final String TAG = "subsurfacedivelog.mobile";
 	public static native void setUsbDevice(UsbDevice usbDevice);
 	public static native void restartDownload(UsbDevice usbDevice);
+	public static native void onFileSelected(String localPath);
+	private static final int FILE_PICKER_REQUEST_CODE = 1001;
 	private static Context appContext;
 
 	// we need to provide two endpoints:
@@ -226,6 +233,61 @@ public class SubsurfaceMobileActivity extends QtActivity
 			}
 		}
 	};
+
+	// AI-generated (Claude)
+	public void showFilePicker() {
+		Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+		intent.addCategory(Intent.CATEGORY_OPENABLE);
+		intent.setType("*/*");
+		startActivityForResult(intent, FILE_PICKER_REQUEST_CODE);
+	}
+
+	// AI-generated (Claude)
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		if (requestCode == FILE_PICKER_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
+			Uri uri = data.getData();
+			if (uri == null) return;
+			String fileName = "picked_file";
+			ContentResolver cr = getContentResolver();
+			try (Cursor cursor = cr.query(uri, null, null, null, null)) {
+				if (cursor != null && cursor.moveToFirst()) {
+					int nameIdx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+					if (nameIdx >= 0) fileName = cursor.getString(nameIdx);
+				}
+			}
+			File destFile = new File(getCacheDir(), fileName);
+			try {
+				InputStream in = cr.openInputStream(uri);
+				FileOutputStream out = new FileOutputStream(destFile);
+				byte[] buf = new byte[8192]; int len;
+				while ((len = in.read(buf)) > 0) out.write(buf, 0, len);
+				in.close(); out.close();
+				onFileSelected(destFile.getAbsolutePath());
+			} catch (Exception e) {
+				Log.e(TAG, "showFilePicker copy failed: " + e.getMessage());
+			}
+		}
+	}
+
+	// AI-generated (Claude)
+	public boolean shareFile(String path) {
+		File fileToShare = new File(path);
+		Uri uri;
+		try {
+			uri = FileProvider.getUriForFile(this, fileProviderAuthority, fileToShare);
+		} catch (IllegalArgumentException e) {
+			Log.e(TAG, "shareFile: cannot get URI for " + path);
+			return false;
+		}
+		Intent shareIntent = new Intent(Intent.ACTION_SEND);
+		shareIntent.setType("text/plain");
+		shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
+		shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+		startActivity(Intent.createChooser(shareIntent, "Share"));
+		return true;
+	}
 
 	public static Context getAppContext()
 	{

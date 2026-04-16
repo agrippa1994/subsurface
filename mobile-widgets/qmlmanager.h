@@ -234,6 +234,7 @@ public slots:
 	void restartDownload(QJniObject usbDevice);
 	void androidUsbPopoulateConnections();
 	QString getProductVendorConnectionIdx(android_usb_serial_device_descriptor descriptor);
+	void androidFileSelected(const QString &localPath);
 #endif
 	void divesChanged(const QVector<dive *> &dives, DiveField field);
 	void createFirmwareUpdater(QString product);

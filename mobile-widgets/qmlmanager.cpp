@@ -1698,6 +1698,16 @@ void QMLManager::exportDiveAsCsv(int id)
 
 #if defined(Q_OS_IOS)
 	iosshare.shareWithSharesheet(fileName);
+#elif defined(Q_OS_ANDROID)
+	// AI-generated (Claude)
+	QJniObject activity(QNativeInterface::QAndroidApplication::context());
+	if (activity.isValid()) {
+		QJniObject filePath = QJniObject::fromString(fileName);
+		bool success = activity.callMethod<jboolean>("shareFile",
+			"(Ljava/lang/String;)Z",
+			filePath.object<jstring>());
+		report_info("%s shareFile %s", __func__, success ? "succeeded" : "failed");
+	}
 #endif
 }
 
@@ -1722,8 +1732,29 @@ void QMLManager::importFromLocal()
 	});
 	iosshare.showFilePicker();
 
+#elif defined(Q_OS_ANDROID)
+	// AI-generated (Claude)
+	QJniObject activity(QNativeInterface::QAndroidApplication::context());
+	if (activity.isValid()) {
+		activity.callMethod<void>("showFilePicker");
+	}
 #endif
 }
+
+// AI-generated (Claude)
+#if defined(Q_OS_ANDROID)
+void QMLManager::androidFileSelected(const QString &localPath)
+{
+	appendTextToLog("androidFileSelected: " + localPath);
+	struct divelog log;
+	parse_file(qPrintable(localPath), &log);
+	if (localPath.endsWith(".xml", Qt::CaseInsensitive)) {
+		divelog.clear();
+	}
+	divelog.add_imported_dives(log, import_flags::merge_all_trips);
+	changesNeedSaving();
+}
+#endif
 
 void QMLManager::deleteDive(int id)
 {

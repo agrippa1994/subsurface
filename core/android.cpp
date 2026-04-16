@@ -190,6 +190,25 @@ Java_org_subsurfacedivelog_mobile_SubsurfaceMobileActivity_restartDownload(JNIEn
 	return;
 }
 
+// AI-generated (Claude)
+// extern "C" is required so the JNI symbol is exported without C++ name mangling.
+extern "C" JNIEXPORT void JNICALL
+Java_org_subsurfacedivelog_mobile_SubsurfaceMobileActivity_onFileSelected(JNIEnv *env,
+	jobject,
+	jstring jLocalPath)
+{
+	const char *chars = env->GetStringUTFChars(jLocalPath, nullptr);
+	QString localPath = QString::fromUtf8(chars);
+	env->ReleaseStringUTFChars(jLocalPath, chars);
+	LOG(QString("onFileSelected: %1").arg(localPath));
+#if defined(SUBSURFACE_MOBILE)
+	// androidFileSelected touches Qt models and must run on the Qt main thread.
+	// onActivityResult fires on the Android UI thread, so queue the call.
+	QMetaObject::invokeMethod(QMLManager::instance(), "androidFileSelected",
+		Qt::QueuedConnection, Q_ARG(QString, localPath));
+#endif
+}
+
 /* NOP wrappers to comform with windows.c */
 int subsurface_rename(const char *path, const char *newpath)
 {
