@@ -39,6 +39,19 @@ echo "  Qt: ${QT_VERSION} at ${QT_IOS_PATH}"
 echo "  Arch: ${ARCH}, SDK: ${TARGET_SDK}"
 echo "  Build type: ${BUILD_TYPE}"
 
+# Resolve the iOS SDK path early; needed to work around a GLESv2 detection
+# issue on iOS 26+ where the Qt toolchain's CMAKE_FIND_ROOT_PATH does not
+# include the SDK sysroot, so find_library(NAMES OpenGLES) never finds
+# OpenGLES.framework.  Pre-caching the three variables causes FindGLESv2.cmake
+# to skip its find_library / check_cxx_source_compiles probes entirely.
+SDK_DIR=$(xcrun --sdk "${TARGET_SDK}" --show-sdk-path)
+GLES_FRAMEWORK="${SDK_DIR}/System/Library/Frameworks/OpenGLES.framework"
+GLES_CMAKE_HINTS=(
+	"-DHAVE_GLESv2=TRUE"
+	"-DGLESv2_LIBRARY=${GLES_FRAMEWORK}/OpenGLES.tbd"
+	"-DGLESv2_INCLUDE_DIR=${GLES_FRAMEWORK}/Headers"
+)
+
 # 1. Build native dependencies (libxml2, libxslt, libzip, libgit2)
 echo "=== Building native dependencies ==="
 ARCH="${ARCH}" TARGET_SDK="${TARGET_SDK}" IOS_DEPLOYMENT_TARGET="${IOS_DEPLOYMENT_TARGET}" \
@@ -56,7 +69,8 @@ bash ./scripts/mobilecomponents.sh \
 	-DQT_HOST_PATH="${QT_HOST_PATH}" \
 	-DQt6CoreTools_DIR="${QT_HOST_PATH}/lib/cmake/Qt6CoreTools" \
 	-DQt6LinguistTools_DIR="${QT_HOST_PATH}/lib/cmake/Qt6LinguistTools" \
-	-DBUILD_SHARED_LIBS=OFF
+	-DBUILD_SHARED_LIBS=OFF \
+	"${GLES_CMAKE_HINTS[@]}"
 
 # 2b. Build googlemaps plugin (static, for iOS)
 echo "=== Building googlemaps plugin ==="
@@ -130,7 +144,8 @@ cmake -G Xcode "${SUBSURFACE_SOURCE}" \
 	-DNO_DOCS=ON \
 	-DBUILD_TESTS=OFF \
 	-DBUILD_WITH_QT6=ON \
-	-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
+	-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
+	"${GLES_CMAKE_HINTS[@]}"
 
 # 6. Build
 echo "=== Building ==="
